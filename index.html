@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SzafaX</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#f4f4f5;
+    color:#111;
+}
+header{
+    background:#111;
+    color:white;
+    padding:14px 20px;
+    display:flex;
+    align-items:center;
+    gap:15px;
+    position:sticky;
+    top:0;
+    z-index:10;
+}
+.logo{
+    font-size:28px;
+    font-weight:900;
+}
+.logo span{color:#7657ff}
+.search{
+    flex:1;
+    padding:12px;
+    border:0;
+    border-radius:10px;
+    font-size:16px;
+}
+button{
+    border:0;
+    border-radius:10px;
+    padding:11px 15px;
+    cursor:pointer;
+    font-weight:bold;
+}
+.primary{
+    background:#7657ff;
+    color:white;
+}
+.white{
+    background:white;
+    color:#111;
+}
+main{
+    max-width:1100px;
+    margin:auto;
+    padding:20px;
+}
+.hero{
+    background:linear-gradient(135deg,#111,#392b75);
+    color:white;
+    padding:35px;
+    border-radius:20px;
+    margin-bottom:20px;
+}
+.hero h1{
+    margin:0 0 10px;
+    font-size:40px;
+}
+.filters{
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
+    flex-wrap:wrap;
+}
+.filters select{
+    padding:10px;
+    border-radius:10px;
+    border:1px solid #ddd;
+}
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+    gap:18px;
+}
+.card{
+    background:white;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 3px 15px #0001;
+}
+.card img{
+    width:100%;
+    height:240px;
+    object-fit:cover;
+    background:#eee;
+}
+.info{
+    padding:14px;
+}
+.name{
+    font-size:18px;
+    font-weight:bold;
+}
+.price{
+    font-size:21px;
+    font-weight:bold;
+    margin-top:8px;
+}
+.meta{
+    color:#777;
+    margin-top:5px;
+}
+.actions{
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+}
+.actions button{
+    flex:1;
+}
+.modal{
+    position:fixed;
+    inset:0;
+    background:#0008;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:15px;
+    z-index:100;
+}
+.modal.active{
+    display:flex;
+}
+.box{
+    background:white;
+    width:100%;
+    max-width:520px;
+    max-height:90vh;
+    overflow:auto;
+    border-radius:18px;
+    padding:20px;
+}
+.close{
+    float:right;
+    background:#eee;
+}
+label{
+    display:block;
+    margin-top:12px;
+    font-weight:bold;
+}
+input,textarea,select{
+    width:100%;
+    padding:11px;
+    margin-top:5px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    font-size:15px;
+}
+textarea{
+    min-height:90px;
+}
+.preview{
+    width:100%;
+    height:200px;
+    object-fit:contain;
+    background:#eee;
+    border-radius:12px;
+    margin-top:10px;
+}
+.cart-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 0;
+    border-bottom:1px solid #ddd;
+}
+.cart-item img{
+    width:65px;
+    height:65px;
+    object-fit:cover;
+    border-radius:10px;
+}
+.cart-info{
+    flex:1;
+}
+.total{
+    font-size:22px;
+    font-weight:bold;
+    text-align:right;
+    margin:20px 0;
+}
+.empty{
+    text-align:center;
+    padding:50px;
+    color:#777;
+}
+@media(max-width:600px){
+    header{
+        flex-wrap:wrap;
+    }
+    .search{
+        order:3;
+        flex-basis:100%;
+    }
+    .hero h1{
+        font-size:30px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+Szafa<span>X</span>
+</div>
+
+<input
+id="search"
+class="search"
+placeholder="🔎 Szukaj ubrań..."
+>
+
+<button class="white" onclick="openCart()">
+🛒 Koszyk (<span id="cartCount">0</span>)
+</button>
+
+<button class="primary" onclick="openAdd()">
+＋ Wystaw
+</button>
+
+</header>
+
+<main>
+
+<section class="hero">
+<h1>SzafaX 👕</h1>
+<p>Twój marketplace z ubraniami.</p>
+</section>
+
+<div class="filters">
+
+<select id="category">
+<option value="">Wszystkie kategorie</option>
+<option>Koszulki</option>
+<option>Bluzy</option>
+<option>Spodnie</option>
+<option>Kurtki</option>
+<option>Buty</option>
+<option>Inne</option>
+</select>
+
+<select id="sort">
+<option value="new">Najnowsze</option>
+<option value="cheap">Najtańsze</option>
+<option value="expensive">Najdroższe</option>
+</select>
+
+</div>
+
+<div id="products" class="grid"></div>
+
+</main>
+
+
+<!-- DODAWANIE -->
+
+<div id="addModal" class="modal">
+
+<div class="box">
+
+<button class="close" onclick="closeModal('addModal')">✕</button>
+
+<h2>Wystaw ubranie</h2>
+
+<form id="addForm">
+
+<label>Nazwa ubrania</label>
+<input id="name" required placeholder="np. Nike Tech Fleece">
+
+<label>Cena</label>
+<input id="price" type="number" min="0" step="0.01" required>
+
+<label>Rozmiar</label>
+<input id="size" placeholder="np. M">
+
+<label>Kategoria</label>
+
+<select id="cat">
+<option>Koszulki</option>
+<option>Bluzy</option>
+<option>Spodnie</option>
+<option>Kurtki</option>
+<option>Buty</option>
+<option>Inne</option>
+</select>
+
+<label>Opis</label>
+<textarea id="description"
+placeholder="Napisz coś o ubraniu..."></textarea>
+
+<label>Zdjęcie</label>
+<input id="image" type="file" accept="image/*" required>
+
+<img id="preview" class="preview" style="display:none">
+
+<br>
+
+<button class="primary" type="submit">
+Wystaw przedmiot
+</button>
+
+</form>
+
+</div>
+</div>
+
+
+<!-- SZCZEGÓŁY -->
+
+<div id="detailModal" class="modal">
+
+<div class="box">
+
+<button class="close" onclick="closeModal('detailModal')">✕</button>
+
+<div id="details"></div>
+
+</div>
+</div>
+
+
+<!-- KOSZYK -->
+
+<div id="cartModal" class="modal">
+
+<div class="box">
+
+<button class="close" onclick="closeModal('cartModal')">✕</button>
+
+<h2>🛒 Koszyk</h2>
+
+<div id="cart"></div>
+
+<div id="total" class="total"></div>
+
+<button
+id="checkoutButton"
+class="primary"
+style="width:100%"
+onclick="checkout()"
+>
+Przejdź do zamówienia
+</button>
+
+<div id="checkoutForm" style="display:none">
+
+<h3>📦 Dane dostawy</h3>
+
+<label>Imię i nazwisko</label>
+<input id="buyer">
+
+<label>Miasto</label>
+<input id="city">
+
+<label>Ulica i numer</label>
+<input id="street">
+
+<label>Kod pocztowy</label>
+<input id="zip">
+
+<br>
+
+<button
+class="primary"
+style="width:100%"
+onclick="order()"
+>
+Złóż zamówienie
+</button>
+
+</div>
+
+</div>
+</div>
+
+
+<script>
+
+let products =
+JSON.parse(localStorage.getItem("szafax_products")) || [];
+
+let cart =
+JSON.parse(localStorage.getItem("szafax_cart")) || [];
+
+
+/* ZAPIS */
+
+function save(){
+
+localStorage.setItem(
+"szafax_products",
+JSON.stringify(products)
+);
+
+localStorage.setItem(
+"szafax_cart",
+JSON.stringify(cart)
+);
+
+}
+
+
+/* PRODUKTY */
+
+function render(){
+
+let search =
+document.getElementById("search")
+.value
+.toLowerCase();
+
+let category =
+document.getElementById("category").value;
+
+let sort =
+document.getElementById("sort").value;
+
+let list =
+products.filter(p =>
+
+p.name.toLowerCase().includes(search)
+
+&&
+
+(!category || p.category === category)
+
+);
+
+if(sort==="cheap")
+list.sort((a,b)=>a.price-b.price);
+
+if(sort==="expensive")
+list.sort((a,b)=>b.price-a.price);
+
+if(sort==="new")
+list.sort((a,b)=>b.id-a.id);
+
+
+let container =
+document.getElementById("products");
+
+
+if(list.length===0){
+
+container.innerHTML=`
+<div class="empty">
+Nie ma jeszcze żadnych ubrań.<br><br>
+Kliknij „＋ Wystaw” i dodaj pierwsze 👕
+</div>
+`;
+
+return;
+
+}
+
+
+container.innerHTML = list.map(p=>`
+
+<div class="card">
+
+<img src="${p.image}">
+
+<div class="info">
+
+<div class="name">
+${escapeHTML(p.name)}
+</div>
+
+<div class="meta">
+${escapeHTML(p.category)}
+•
+${escapeHTML(p.size || "brak rozmiaru")}
+</div>
+
+<div class="price">
+${Number(p.price).toFixed(2)} zł
+</div>
+
+<div class="actions">
+
+<button
+class="white"
+onclick="showDetails(${p.id})"
+>
+Zobacz
+</button>
+
+<button
+class="primary"
+onclick="addCart(${p.id})"
+>
+Kup
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+`).join("");
+
+}
+
+
+/* DODAWANIE */
+
+function openAdd(){
+
+document
+.getElementById("addModal")
+.classList.add("active");
+
+}
+
+
+function closeModal(id){
+
+document
+.getElementById(id)
+.classList.remove("active");
+
+}
+
+
+document
+.getElementById("image")
+.addEventListener("change",function(){
+
+let file=this.files[0];
+
+if(!file)return;
+
+let reader=new FileReader();
+
+reader.onload=function(){
+
+let preview =
+document.getElementById("preview");
+
+preview.src=reader.result;
+
+preview.style.display="block";
+
+};
+
+reader.readAsDataURL(file);
+
+});
+
+
+document
+.getElementById("addForm")
+.addEventListener("submit",function(e){
+
+e.preventDefault();
+
+let file =
+document.getElementById("image").files[0];
+
+if(!file)return;
+
+let reader=new FileReader();
+
+reader.onload=function(){
+
+let product={
+
+id:Date.now(),
+
+name:document.getElementById("name").value,
+
+price:Number(
+document.getElementById("price").value
+),
+
+size:document.getElementById("size").value,
+
+category:document.getElementById("cat").value,
+
+description:
+document.getElementById("description").value,
+
+image:reader.result
+
+};
+
+products.push(product);
+
+save();
+
+render();
+
+closeModal("addModal");
+
+document
+.getElementById("addForm")
+.reset();
+
+document
+.getElementById("preview")
+.style.display="none";
+
+alert("Ubranie zostało wystawione! 👕");
+
+};
+
+reader.readAsDataURL(file);
+
+});
+
+
+/* SZCZEGÓŁY */
+
+function showDetails(id){
+
+let p=products.find(x=>x.id===id);
+
+document.getElementById("details").innerHTML=`
+
+<img
+src="${p.image}"
+class="preview"
+>
+
+<h2>
+${escapeHTML(p.name)}
+</h2>
+
+<h2>
+${Number(p.price).toFixed(2)} zł
+</h2>
+
+<p>
+<b>Kategoria:</b> ${escapeHTML(p.category)}
+</p>
+
+<p>
+<b>Rozmiar:</b> ${escapeHTML(p.size || "brak")}
+</p>
+
+<p>
+${escapeHTML(p.description || "Brak opisu")}
+</p>
+
+<button
+class="primary"
+style="width:100%"
+onclick="addCart(${p.id});closeModal('detailModal')"
+>
+🛒 Dodaj do koszyka
+</button>
+
+`;
+
+document
+.getElementById("detailModal")
+.classList.add("active");
+
+}
+
+
+/* KOSZYK */
+
+function addCart(id){
+
+if(!cart.includes(id))
+cart.push(id);
+
+save();
+
+updateCart();
+
+alert("Dodano do koszyka 🛒");
+
+}
+
+
+function removeCart(id){
+
+cart =
+cart.filter(x=>x!==id);
+
+save();
+
+renderCart();
+
+updateCart();
+
+}
+
+
+function openCart(){
+
+renderCart();
+
+document
+.getElementById("cartModal")
+.classList.add("active");
+
+}
+
+
+function renderCart(){
+
+let items =
+cart
+.map(id=>products.find(p=>p.id===id))
+.filter(Boolean);
+
+let container =
+document.getElementById("cart");
+
+if(items.length===0){
+
+container.innerHTML=`
+<div class="empty">
+Koszyk jest pusty 🛒
+</div>
+`;
+
+document.getElementById("total").innerHTML="";
+
+return;
+
+}
+
+
+container.innerHTML =
+items.map(p=>`
+
+<div class="cart-item">
+
+<img src="${p.image}">
+
+<div class="cart-info">
+
+<b>
+${escapeHTML(p.name)}
+</b>
+
+<br>
+
+${Number(p.price).toFixed(2)} zł
+
+</div>
+
+<button
+onclick="removeCart(${p.id})"
+>
+Usuń
+</button>
+
+</div>
+
+`).join("");
+
+
+let total =
+items.reduce(
+(sum,p)=>sum+Number(p.price),
+0
+);
+
+document.getElementById("total").innerHTML=
+"Razem: "+total.toFixed(2)+" zł";
+
+}
+
+
+function updateCart(){
+
+document.getElementById("cartCount")
+.innerText=cart.length;
+
+}
+
+
+/* ZAMÓWIENIE */
+
+function checkout(){
+
+if(cart.length===0){
+
+alert("Koszyk jest pusty!");
+
+return;
+
+}
+
+document
+.getElementById("checkoutForm")
+.style.display="block";
+
+}
+
+
+function order(){
+
+let buyer =
+document.getElementById("buyer").value;
+
+let city =
+document.getElementById("city").value;
+
+let street =
+document.getElementById("street").value;
+
+let zip =
+document.getElementById("zip").value;
+
+
+if(
+!buyer ||
+!city ||
+!street ||
+!zip
+){
+
+alert("Uzupełnij wszystkie dane.");
+
+return;
+
+}
+
+
+let orderNumber =
+"SZX-"+Math.floor(
+100000+Math.random()*900000
+);
+
+
+alert(
+"Zamówienie "+orderNumber+
+" zostało utworzone! 📦"
+);
+
+
+cart=[];
+
+save();
+
+updateCart();
+
+renderCart();
+
+document
+.getElementById("checkoutForm")
+.style.display="none";
+
+}
+
+
+/* WYSZUKIWANIE */
+
+document
+.getElementById("search")
+.addEventListener(
+"input",
+render
+);
+
+document
+.getElementById("category")
+.addEventListener(
+"change",
+render
+);
+
+document
+.getElementById("sort")
+.addEventListener(
+"change",
+render
+);
+
+
+/* BEZPIECZNY TEKST */
+
+function escapeHTML(text){
+
+return String(text)
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+
+updateCart();
+
+render();
+
+</script>
+
+</body>
+  </html>
